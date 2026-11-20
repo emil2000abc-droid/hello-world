@@ -381,8 +381,7 @@ select {
 /* ------------------------------------------------------------- layout */
 
 .app {
-  height: 100vh;
-  height: 100dvh;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -2091,6 +2090,29 @@ select {
 @media (max-width: 420px) {
   .lcd-sub {
     display: none;
+  }
+
+  .tbtn {
+    width: 33px;
+  }
+
+  .seg > button {
+    min-width: 28px;
+    padding: 0 3px;
+    font-size: 10px;
+  }
+
+  .transport {
+    gap: 2px;
+  }
+
+  .pattern-picker .icon-btn {
+    min-width: 24px;
+  }
+
+  .pl-track-head {
+    gap: 6px;
+    padding: 0 6px;
   }
 
   .lcd-main {

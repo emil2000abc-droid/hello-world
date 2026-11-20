@@ -12,7 +12,8 @@ import { onFrame } from '../frame';
 import { cx } from '../util';
 
 const ROW_H = 46;
-const HEAD_W = 132;
+const HEAD_W_WIDE = 132;
+const HEAD_W_NARROW = 92;
 const RULER_H = 26;
 
 const PL_SNAPS = [
@@ -211,6 +212,8 @@ export function Playlist() {
   const [band, setBand] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const lastPointer = useRef('mouse');
 
+  const narrow = useNarrow();
+  const HEAD_W = narrow ? HEAD_W_NARROW : HEAD_W_WIDE;
   const pxPerTick = (24 * pl.zoomX) / PPQ;
   const bar = ticksPerBar(p.timeSig);
   const beat = ticksPerBeat(p.timeSig);
@@ -242,7 +245,7 @@ export function Playlist() {
           if (vx > visible - 40 || vx < 0) sc.scrollLeft = Math.max(0, x - 40);
         }
       }),
-    [pxPerTick],
+    [pxPerTick, HEAD_W],
   );
 
   // Lane coordinates from a pointer event.
@@ -678,6 +681,18 @@ export function Playlist() {
       {pl.selection.length === 1 && <ClipActions id={pl.selection[0]} />}
     </div>
   );
+}
+
+function useNarrow(): boolean {
+  const query = '(max-width: 520px)';
+  const [narrow, setNarrow] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setNarrow(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return narrow;
 }
 
 /** Touch-friendly action strip for the selected clip. */

@@ -66,12 +66,25 @@ function Projects() {
             {m.name}
           </button>
           {m.id !== current && (
-            <button className="icon-btn" aria-label="Удалить проект" title="Удалить проект" onClick={async () => {
-              if (confirm(`Удалить проект «${m.name}»?`)) {
-                await P.removeProject(m.id);
-                setList(await listProjects());
+            <button
+              className="icon-btn"
+              aria-label="Удалить проект"
+              title="Удалить проект"
+              onClick={(e) =>
+                // The menu doubles as the confirmation step.
+                openMenu(e.clientX, e.clientY, [
+                  {
+                    label: `Удалить «${m.name}» навсегда`,
+                    danger: true,
+                    action: async () => {
+                      await P.removeProject(m.id);
+                      setList(await listProjects());
+                    },
+                  },
+                  { label: 'Отмена' },
+                ])
               }
-            }}>
+            >
               <Icon name="trash" size={13} />
             </button>
           )}

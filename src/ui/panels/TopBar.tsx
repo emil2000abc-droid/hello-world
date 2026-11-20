@@ -34,7 +34,7 @@ export function fileMenuItems(): MenuItem[] {
     { label: 'Экспорт аудио (WAV, стемы)…', action: () => patchUi({ exportOpen: true }), hint: 'Ctrl+R' },
     { label: 'Экспорт MIDI — паттерн', action: () => P.exportMidi('pattern') },
     { label: 'Экспорт MIDI — вся песня', action: () => P.exportMidi('song') },
-    { label: 'Экспорт файла проекта (.resonix)', action: () => P.exportProjectToFile() },
+    { label: 'Экспорт файла проекта (.resonix)', action: () => void P.exportProjectToFile() },
     { separator: true, label: '' },
     { label: 'Импорт аудиофайлов…', action: async () => void P.importAudioFiles(await pickFiles('audio/*,.wav,.mp3,.ogg,.flac,.m4a', true)) },
     {
@@ -45,9 +45,9 @@ export function fileMenuItems(): MenuItem[] {
       },
     },
     {
-      label: 'Открыть файл проекта (.resonix)…',
+      label: 'Открыть файл проекта (.resonix / .zip)…',
       action: async () => {
-        const [f] = await pickFiles('.resonix,application/json');
+        const [f] = await pickFiles('.resonix,.json,.zip,application/json,application/zip');
         if (f) await P.importProjectFromFile(f);
       },
     },

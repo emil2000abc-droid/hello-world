@@ -20,9 +20,11 @@ export function ExportDialog() {
   const run = async () => {
     setBusy('Подготовка…');
     try {
-      await exportAudio(opts, setBusy);
-      toast('Экспорт завершён', 'success');
-      patchUi({ exportOpen: false });
+      const saved = await exportAudio(opts, setBusy);
+      if (saved) {
+        toast('Экспорт завершён', 'success');
+        patchUi({ exportOpen: false });
+      }
     } catch (e) {
       toast(`Ошибка экспорта: ${(e as Error).message}`, 'error');
     } finally {
@@ -72,7 +74,7 @@ export function ExportDialog() {
               <input type="checkbox" checked={opts.normalize} onChange={(e) => set({ normalize: e.target.checked })} /> Нормализовать
             </label>
             <label>
-              <input type="checkbox" checked={opts.stems} onChange={(e) => set({ stems: e.target.checked })} /> Стемы (каждый канал микшера отдельно)
+              <input type="checkbox" checked={opts.stems} onChange={(e) => set({ stems: e.target.checked })} /> Стемы (каждый канал микшера отдельным WAV в одном .zip)
             </label>
           </div>
         </div>

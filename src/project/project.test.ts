@@ -3,6 +3,7 @@ import { PPQ, type Project } from '../core/types';
 import { demoProject } from './factory';
 import { sanitizeProject } from './file';
 import { readMidi, writeMidi } from './midi';
+import { crc32, createZip, isZip, readZip } from './zip';
 
 describe('MIDI files', () => {
   it('round-trips notes, tempo and meter', () => {
@@ -48,5 +49,29 @@ describe('sanitizeProject', () => {
     expect(s.clips).toHaveLength(0);
     expect(s.patterns).toHaveLength(1);
     expect(s.mixer.length).toBeGreaterThan(1);
+  });
+});
+
+describe('zip', () => {
+  it('computes the standard CRC-32', () => {
+    expect(crc32(new TextEncoder().encode('123456789'))).toBe(0xcbf43926);
+  });
+
+  it('round-trips stored entries with UTF-8 names', () => {
+    const a = new TextEncoder().encode('hello');
+    const b = new Uint8Array([0, 1, 2, 255]);
+    const zip = createZip([
+      { name: 'Демо - 01 Kick.wav', data: a },
+      { name: 'b.bin', data: b },
+    ]);
+    expect(isZip(zip)).toBe(true);
+    const back = readZip(zip);
+    expect(back.map((e) => e.name)).toEqual(['Демо - 01 Kick.wav', 'b.bin']);
+    expect(Array.from(back[1].data)).toEqual([0, 1, 2, 255]);
+    expect(new TextDecoder().decode(back[0].data)).toBe('hello');
+    // End-of-central-directory record is present.
+    const v = new DataView(zip.buffer);
+    expect(v.getUint32(zip.length - 22, true)).toBe(0x06054b50);
+    expect(v.getUint16(zip.length - 22 + 10, true)).toBe(2);
   });
 });

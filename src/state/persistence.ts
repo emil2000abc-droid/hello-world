@@ -7,7 +7,8 @@ import { normalize, renderProject } from '../audio/render';
 import { audioBufferToWav, type WavBitDepth } from '../audio/wav';
 import * as db from '../project/db';
 import { demoProject, emptyProject, makeChannel, makeNote } from '../project/factory';
-import { downloadBlob, exportProjectFile, importProjectFile, safeFileName, sanitizeProject } from '../project/file';
+import { exportProjectFile, importProjectFile, safeFileName, sanitizeProject, saveFile } from '../project/file';
+import { createZip, isZip, readZip } from '../project/zip';
 import { notesToTrack, readMidi, writeMidi, type MidiTrackData } from '../project/midi';
 import { addAudioClip, registerSample } from './actions';
 import { currentPatternId, engine, patchUi, project, toast, ui } from './app';
@@ -131,14 +132,28 @@ export async function removeProject(id: string): Promise<void> {
   await db.deleteProject(id);
 }
 
-export function exportProjectToFile(): void {
+export async function exportProjectToFile(): Promise<void> {
   const p = project.get();
-  downloadBlob(exportProjectFile(p, engine.bank.get), `${safeFileName(p.name)}.resonix`);
+  try {
+    await saveFile(exportProjectFile(p, engine.bank.get), `${safeFileName(p.name)}.resonix`);
+  } catch (e) {
+    toast((e as Error).message, 'error');
+  }
 }
 
 export async function importProjectFromFile(file: File): Promise<void> {
   try {
-    const { project: p, samples } = await importProjectFile(await file.text(), engine.ctx);
+    // Inside an artifact the project file is saved wrapped in a zip.
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let text: string;
+    if (isZip(bytes)) {
+      const entry = readZip(bytes).find((e) => /\.(resonix|json)$/i.test(e.name));
+      if (!entry) throw new Error('В архиве нет файла проекта');
+      text = new TextDecoder().decode(entry.data);
+    } else {
+      text = new TextDecoder().decode(bytes);
+    }
+    const { project: p, samples } = await importProjectFile(text, engine.ctx);
     for (const s of samples) {
       engine.bank.add(s.id, s.name, s.buffer);
       await db.saveSample(db.bufferToStored(s.id, s.name, s.buffer)).catch(() => {});
@@ -223,7 +238,8 @@ export interface ExportOptions {
   stems: boolean;
 }
 
-export async function exportAudio(opts: ExportOptions, onProgress: (text: string) => void): Promise<void> {
+/** Render and save; resolves false if the viewer declined the save. */
+export async function exportAudio(opts: ExportOptions, onProgress: (text: string) => void): Promise<boolean> {
   const p = project.get();
   const patternId = currentPatternId();
   const base = safeFileName(p.name);
@@ -234,14 +250,19 @@ export async function exportAudio(opts: ExportOptions, onProgress: (text: string
   };
   if (!opts.stems) {
     onProgress('Рендеринг микса…');
-    downloadBlob(await render(null), `${base}.wav`);
-    return;
+    return saveFile(await render(null), `${base}.wav`);
   }
+  // Stems: one WAV per used mixer insert, bundled in a single zip.
   const used = [...new Set([...p.channels.map((c) => c.mixerTrack), ...p.clips.flatMap((c) => (c.kind === 'audio' ? [c.mixerTrack] : []))])].filter((i) => i > 0).sort((a, b) => a - b);
+  const entries = [];
   for (const [n, i] of used.entries()) {
     onProgress(`Стем ${n + 1}/${used.length}: ${p.mixer[i].name}`);
-    downloadBlob(await render(i), `${base} - ${String(i).padStart(2, '0')} ${safeFileName(p.mixer[i].name)}.wav`);
+    const wav = await render(i);
+    entries.push({ name: `${base} - ${String(i).padStart(2, '0')} ${safeFileName(p.mixer[i].name)}.wav`, data: new Uint8Array(await wav.arrayBuffer()) });
   }
+  if (!entries.length) throw new Error('Нет каналов микшера с сигналом');
+  onProgress('Упаковка стемов…');
+  return saveFile(new Blob([createZip(entries)], { type: 'application/zip' }), `${base} - stems.zip`);
 }
 
 export function exportMidi(scope: 'pattern' | 'song'): void {
@@ -279,7 +300,7 @@ export function exportMidi(scope: 'pattern' | 'song'): void {
     return;
   }
   const bytes = writeMidi({ bpm: p.bpm, timeSig: p.timeSig, tracks });
-  downloadBlob(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'audio/midi' }), `${safeFileName(p.name)}${scope === 'pattern' ? ' - pattern' : ''}.mid`);
+  saveFile(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'audio/midi' }), `${safeFileName(p.name)}${scope === 'pattern' ? ' - pattern' : ''}.mid`).catch((e) => toast((e as Error).message, 'error'));
 }
 
 /** Import a .mid file into the current pattern, one synth channel per track. */

@@ -6,6 +6,7 @@ import { uid } from '../core/music';
 import type { Clip, ParamMap, Project } from '../core/types';
 import { audioBufferToWav } from '../audio/wav';
 import { makeMixer, makeTracks, MIXER_INSERTS } from './factory';
+import { createZip } from './zip';
 
 const FORMAT = 'resonix-project';
 
@@ -75,7 +76,24 @@ export async function importProjectFile(text: string, ctx: BaseAudioContext): Pr
   return { project, samples };
 }
 
-export function downloadBlob(blob: Blob, filename: string): void {
+interface HostDownloads {
+  save(req: { filename: string; data: Blob | ArrayBuffer | ArrayBufferView }): Promise<{ status: string }>;
+}
+
+/** Extensions a claude.ai artifact host will save directly; others go inside a zip. */
+const HOST_EXTENSIONS = new Set(['txt', 'json', 'md', 'csv', 'zip', 'html', 'svg', 'pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'webm']);
+
+let hostDownloads: Promise<HostDownloads | null> | null = null;
+
+/** The host's save capability when running as a published artifact, else null. */
+function getHostDownloads(): Promise<HostDownloads | null> {
+  const claude = (window as unknown as { claude?: { use?: (name: string) => Promise<unknown> } }).claude;
+  if (typeof claude?.use !== 'function') return Promise.resolve(null);
+  hostDownloads ??= claude.use('downloads').then((d) => (d as HostDownloads | null) ?? null, () => null);
+  return hostDownloads;
+}
+
+function anchorDownload(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -84,6 +102,35 @@ export function downloadBlob(blob: Blob, filename: string): void {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+/**
+ * Save a generated file. In a normal tab this is a plain download; inside a
+ * claude.ai artifact it goes through the host (which asks the viewer) and is
+ * zipped when the host does not accept its extension.
+ * Resolves false if the viewer declined.
+ */
+export async function saveFile(blob: Blob, filename: string): Promise<boolean> {
+  const host = await getHostDownloads();
+  if (!host) {
+    anchorDownload(blob, filename);
+    return true;
+  }
+  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+  let data: Blob = blob;
+  let name = filename;
+  if (!HOST_EXTENSIONS.has(ext)) {
+    data = new Blob([createZip([{ name: filename, data: new Uint8Array(await blob.arrayBuffer()) }])], { type: 'application/zip' });
+    name = `${filename}.zip`;
+  }
+  try {
+    await host.save({ filename: name, data });
+    return true;
+  } catch (e) {
+    const code = (e as { code?: string }).code;
+    if (code === 'declined') return false;
+    throw new Error(code === 'unavailable' || code === 'not_granted' ? 'Сохранение файлов недоступно в этом окне' : ((e as Error).message ?? 'Не удалось сохранить файл'));
+  }
 }
 
 export function safeFileName(name: string): string {
