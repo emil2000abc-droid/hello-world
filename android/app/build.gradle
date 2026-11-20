@@ -18,24 +18,26 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // The release key never lives in the repository. CI writes it from the
+    // ANDROID_KEYSTORE_BASE64 secret; locally, point these variables at your copy.
+    def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+    def keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    def hasReleaseKey = keystorePath && keystorePassword && file(keystorePath).exists()
     signingConfigs {
-        // Key for installing the APK directly (sideloading). It is not secret:
-        // its only job is to keep the signature stable so updates install over
-        // older builds without losing projects. Use a private key for a store.
-        sideload {
-            storeFile file('resonix-sideload.keystore')
-            storePassword 'resonix-sideload'
-            keyAlias 'resonix'
-            keyPassword 'resonix-sideload'
+        if (hasReleaseKey) {
+            release {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "resonix"
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: keystorePassword
+            }
         }
     }
     buildTypes {
-        debug {
-            signingConfig signingConfigs.sideload
-        }
         release {
             minifyEnabled false
-            signingConfig signingConfigs.sideload
+            // Without the key the release APK is left unsigned (and cannot be installed).
+            if (hasReleaseKey) signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
