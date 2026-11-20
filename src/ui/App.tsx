@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { loadBuiltins } from '../audio/samples';
 import { currentPatternId, engine, patchUi, project, selectedChannelId, setView, toast, ui, useEngine, useUi, type ViewId } from '../state/app';
+import { onFileSaved } from '../project/file';
+import { initNativeShell } from '../platform/native';
 import { connectRecording, loadUserSampleLibrary, restoreLastSession, saveNow, scheduleAutosave } from '../state/persistence';
 import { Icon } from './components/Icon';
 import { ContextMenu, PromptDialog, Toasts } from './components/Overlays';
@@ -73,6 +75,8 @@ function useBoot() {
     window.addEventListener('keydown', unlock, { capture: true });
     const beforeUnload = () => void saveNow();
     window.addEventListener('pagehide', beforeUnload);
+    onFileSaved((text) => toast(text, 'success'));
+    initNativeShell({ back: closeTopmost, pause: () => void saveNow() });
     // Narrow screens start without the browser panel.
     if (window.innerWidth < 900) patchUi({ browserOpen: false });
     return () => {
@@ -84,6 +88,21 @@ function useBoot() {
       window.removeEventListener('pagehide', beforeUnload);
     };
   }, []);
+}
+
+/** Android back button / Esc: close the topmost overlay. Returns false if nothing was open. */
+function closeTopmost(): boolean {
+  const u = ui.get();
+  if (u.menu) patchUi({ menu: null });
+  else if (u.prompt) {
+    u.prompt.resolve(null);
+    patchUi({ prompt: null });
+  } else if (u.exportOpen) patchUi({ exportOpen: false });
+  else if (u.windows.length) patchUi({ windows: u.windows.slice(0, -1) });
+  else if (u.browserOpen && window.innerWidth < 760) patchUi({ browserOpen: false });
+  else if (u.view !== 'playlist') setView('playlist');
+  else return false;
+  return true;
 }
 
 function useShortcuts() {

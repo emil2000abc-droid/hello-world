@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Resonix Studio</string>
+    <string name="title_activity_main">Resonix Studio</string>
+    <string name="package_name">app.resonix.studio</string>
+    <string name="custom_url_scheme">app.resonix.studio</string>
+</resources>

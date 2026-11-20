@@ -7,6 +7,7 @@ import type { Clip, ParamMap, Project } from '../core/types';
 import { audioBufferToWav } from '../audio/wav';
 import { makeMixer, makeTracks, MIXER_INSERTS } from './factory';
 import { createZip } from './zip';
+import { isNativeApp, saveFileNative } from '../platform/native';
 
 const FORMAT = 'resonix-project';
 
@@ -76,6 +77,12 @@ export async function importProjectFile(text: string, ctx: BaseAudioContext): Pr
   return { project, samples };
 }
 
+/** Lets the UI announce where a natively saved file went. */
+let savedNotice: ((text: string) => void) | null = null;
+export function onFileSaved(cb: (text: string) => void): void {
+  savedNotice = cb;
+}
+
 interface HostDownloads {
   save(req: { filename: string; data: Blob | ArrayBuffer | ArrayBufferView }): Promise<{ status: string }>;
 }
@@ -111,6 +118,12 @@ function anchorDownload(blob: Blob, filename: string): void {
  * Resolves false if the viewer declined.
  */
 export async function saveFile(blob: Blob, filename: string): Promise<boolean> {
+  if (isNativeApp()) {
+    // Android app: WebView downloads do nothing, so write the file natively.
+    const where = await saveFileNative(blob, filename);
+    savedNotice?.(`Сохранено: ${where}`);
+    return true;
+  }
   const host = await getHostDownloads();
   if (!host) {
     anchorDownload(blob, filename);

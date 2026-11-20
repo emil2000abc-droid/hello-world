@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="studio_background">#121418</color>
+    <color name="colorPrimary">#121418</color>
+    <color name="colorPrimaryDark">#121418</color>
+    <color name="colorAccent">#F2A541</color>
+</resources>

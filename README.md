@@ -2,7 +2,7 @@
 
 Цифровая музыкальная рабочая станция (DAW) в браузере, с рабочими процессами в духе FL Studio: Channel Rack со степ-секвенсором, Piano Roll, Playlist, Mixer с эффектами, автоматизация, запись и экспорт. Самостоятельный продукт: название, интерфейс и код оригинальные.
 
-Стек: React 19, TypeScript, Vite, Web Audio API (AudioWorklet, OfflineAudioContext), IndexedDB, Canvas и SVG. Из внешних зависимостей во время работы есть только `react`, `react-dom` и `immer`.
+Стек: React 19, TypeScript, Vite, Web Audio API (AudioWorklet, OfflineAudioContext), IndexedDB, Canvas и SVG. Из внешних зависимостей во время работы есть только `react`, `react-dom`, `immer` и плагины Capacitor для Android-версии.
 
 ## Запуск
 
@@ -16,6 +16,26 @@ npm test           # юнит-тесты (vitest)
 Сборка статическая (`base: './'`), поэтому `dist/` можно выложить на любой хостинг.
 
 `npm run build:artifact` собирает одну самодостаточную HTML-страницу (`dist/resonix-artifact.html`) для публикации как артефакт claude.ai. Там файлы сохраняются через диалог хоста, а форматы, которые хост не принимает напрямую (WAV, MIDI, `.resonix`), упаковываются в `.zip`. Импорт проекта принимает и такой `.zip`. Микрофон и Web MIDI в артефакте недоступны: их блокирует песочница хоста. Для записи звука и MIDI-клавиатуры нужен обычный запуск (`npm run dev` или свой хостинг).
+
+## Android-приложение (APK)
+
+Папка `android/` содержит Android-проект на [Capacitor](https://capacitorjs.com): та же студия во встроенном WebView, плюс нативное сохранение файлов, аппаратная кнопка «Назад», запрос доступа к микрофону и автосохранение при сворачивании.
+
+**Готовый APK** собирает GitHub Actions (`.github/workflows/android.yml`) на каждый push и выкладывает в релиз `apk-latest`:
+`https://github.com/<владелец>/<репозиторий>/releases/download/apk-latest/resonix-studio.apk`.
+Скачайте файл на телефон и откройте его. Android попросит разрешить установку из этого источника.
+
+Особенности приложения:
+- Экспорт WAV, MIDI, стемов и проекта сохраняется в «Документы/ResonixStudio». Если общее хранилище недоступно, открывается меню «Поделиться».
+- Запись с микрофона работает, Android спросит разрешение при первой записи. Web MIDI во встроенном WebView Android недоступен.
+- Проекты хранятся внутри приложения (IndexedDB) и переживают обновления, потому что все сборки подписаны одним ключом `android/app/resonix-sideload.keystore`. Этот ключ публичный и годится только для установки вручную. Для Google Play нужен собственный закрытый ключ.
+
+Собрать самому (нужны Android SDK и JDK 21):
+
+```bash
+npm run build && npx cap sync android
+cd android && ./gradlew assembleRelease   # app/build/outputs/apk/release/app-release.apk
+```
 
 ## Возможности
 
@@ -89,6 +109,7 @@ src/
     samples.ts     банк сэмплов и встроенная библиотека, рендерится при запуске
     wav.ts         WAV-кодер, пики для волн
   project/     фабрики и демо, IndexedDB, файлы проекта, MIDI (SMF), zip
+  platform/    оболочка Android-приложения: сохранение файлов, кнопка «Назад», жизненный цикл
   state/       хранилища приложения, действия редактирования, жизненный цикл проекта
   ui/          панели (TopBar, Browser, ChannelRack, PianoRoll, Playlist, Mixer, окна) и компоненты
 ```

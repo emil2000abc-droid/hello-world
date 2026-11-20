@@ -1,0 +1,68 @@
+# Builds the Android app and publishes it as the "apk-latest" release,
+# so the newest APK is always at
+# https://github.com/<owner>/<repo>/releases/download/apk-latest/resonix-studio.apk
+name: Android APK
+
+on:
+  push:
+    branches: [main, master, 'claude/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync into the Android project
+        run: npx cap sync android
+
+      - name: Build APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+
+      - name: Collect APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk resonix-studio.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: resonix-studio-apk
+          path: resonix-studio.apk
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete apk-latest --cleanup-tag --yes || true
+          gh release create apk-latest resonix-studio.apk \
+            --target "$GITHUB_SHA" \
+            --title "Resonix Studio для Android (сборка ${GITHUB_RUN_NUMBER})" \
+            --notes "Скачайте resonix-studio.apk на телефон и откройте его. Android попросит разрешить установку из этого источника. Сборка ${GITHUB_RUN_NUMBER}, коммит ${GITHUB_SHA::7}."

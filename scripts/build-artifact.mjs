@@ -20,7 +20,13 @@ const page = `<title>Resonix Studio</title>
 <style>${css}</style>
 <style>
 /* Artifact shell: the app is one dark screen inside the host's safe-area padding. */
-:root { color-scheme: dark; }
+:root {
+  color-scheme: dark;
+  --safe-area-inset-top: 0px;
+  --safe-area-inset-right: 0px;
+  --safe-area-inset-bottom: 0px;
+  --safe-area-inset-left: 0px;
+}
 html, body { height: 100%; }
 body {
   background: var(--bg);

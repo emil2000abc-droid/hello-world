@@ -41,6 +41,12 @@ body,
   margin: 0;
 }
 
+/* Native app: no long-press callouts or overscroll glow on the UI. */
+.native-app body {
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -382,6 +388,9 @@ select {
 
 .app {
   height: 100%;
+  /* Edge-to-edge displays (Android app, notched phones): keep clear of system bars. */
+  padding: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) var(--safe-area-inset-right, env(safe-area-inset-right, 0px)) 0
+    var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
 }
@@ -2000,7 +2009,7 @@ select {
     display: flex;
     background: var(--panel);
     border-top: 1px solid #000;
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   }
 
   .mobile-nav button {
