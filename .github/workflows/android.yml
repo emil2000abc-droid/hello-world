@@ -6,6 +6,8 @@ name: Android APK
 on:
   push:
     branches: [main, master, 'claude/**']
+    # The website in solar/ is a separate project.
+    paths-ignore: ['solar/**']
   workflow_dispatch:
 
 permissions:

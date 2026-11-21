@@ -1,0 +1,332 @@
+@import 'tailwindcss';
+
+/* SOLAR — one deliberate dark look: deep space, hairlines, acid-lime signal.
+   Layout: full-bleed 3D hero, then a single 1280px column of sections. */
+@theme {
+  --color-void: #030304;
+  --color-ink: #f2f3ee;
+  --color-mist: #9a9f95;
+  --color-dim: #5d6259;
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-lime: #c7ff3d;
+  --color-lime-deep: #9ed12a;
+  --color-ember: #ff9a3c;
+  --font-sans: 'Geist', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background: var(--color-void);
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  /* Decorative glows may extend past the edges; never widen the page. */
+  overflow-x: clip;
+}
+
+body {
+  margin: 0;
+  background: var(--color-void);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--color-lime);
+  color: #050505;
+}
+
+:focus-visible {
+  outline: 1.5px solid var(--color-lime);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+@layer components {
+  .glass {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.025));
+    border: 1px solid rgb(255 255 255 / 0.09);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 20px 60px -30px rgb(0 0 0 / 0.8);
+  }
+
+  .hairline {
+    border-color: var(--color-line);
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-mist);
+  }
+
+  .eyebrow::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--color-lime);
+    box-shadow: 0 0 12px var(--color-lime);
+  }
+
+  .display {
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    line-height: 0.92;
+    text-wrap: balance;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Primary: lime pill with a sliding arrow and a light sweep. */
+  .btn-lime {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    height: 2.75rem;
+    padding: 0 0.5rem 0 1.25rem;
+    border-radius: 999px;
+    background: var(--color-lime);
+    color: #070806;
+    font-weight: 500;
+    font-size: 0.9rem;
+    letter-spacing: -0.01em;
+    box-shadow: 0 0 0 0 rgb(199 255 61 / 0), 0 10px 40px -12px rgb(199 255 61 / 0.55);
+    transition: box-shadow 0.5s var(--ease-out-expo), transform 0.5s var(--ease-out-expo);
+  }
+
+  .btn-lime::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.55) 50%, transparent 80%);
+    transform: translateX(-120%);
+    transition: transform 0.9s var(--ease-out-expo);
+  }
+
+  .btn-lime:hover {
+    box-shadow: 0 0 0 4px rgb(199 255 61 / 0.14), 0 14px 50px -10px rgb(199 255 61 / 0.75);
+    transform: translateY(-1px);
+  }
+
+  .btn-lime:hover::before {
+    transform: translateX(120%);
+  }
+
+  .btn-lime .btn-icon {
+    display: grid;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 999px;
+    background: #070806;
+    color: var(--color-lime);
+    overflow: hidden;
+  }
+
+  .btn-icon svg {
+    transition: transform 0.5s var(--ease-out-expo);
+  }
+
+  .btn-lime:hover .btn-icon svg,
+  .btn-ghost:hover .btn-icon svg {
+    animation: arrow-loop 0.55s var(--ease-out-expo);
+  }
+
+  /* Secondary: hairline glass pill that fills from the left on hover. */
+  .btn-ghost {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    height: 2.75rem;
+    padding: 0 1.25rem;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.16);
+    background: rgb(255 255 255 / 0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--color-ink);
+    font-size: 0.9rem;
+    transition: border-color 0.4s, color 0.4s;
+  }
+
+  .btn-ghost::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: rgb(199 255 61 / 0.1);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.6s var(--ease-out-expo);
+  }
+
+  .btn-ghost:hover {
+    border-color: rgb(199 255 61 / 0.55);
+    color: var(--color-lime);
+  }
+
+  .btn-ghost:hover::before {
+    transform: scaleX(1);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    height: 2rem;
+    padding: 0 0.85rem;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    font-size: 0.78rem;
+    color: var(--color-mist);
+    transition: color 0.3s, border-color 0.3s, background 0.3s;
+  }
+
+  .chip:hover {
+    color: var(--color-ink);
+    border-color: rgb(255 255 255 / 0.25);
+  }
+
+  .chip[aria-pressed='true'] {
+    color: #070806;
+    background: var(--color-lime);
+    border-color: var(--color-lime);
+  }
+
+  .icon-button {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    color: var(--color-ink);
+    transition: border-color 0.3s, color 0.3s, background 0.3s;
+  }
+
+  .icon-button:hover:not(:disabled) {
+    border-color: rgb(199 255 61 / 0.6);
+    color: var(--color-lime);
+  }
+
+  .icon-button:disabled {
+    opacity: 0.35;
+  }
+
+  .icon-button[aria-pressed='true'] {
+    background: var(--color-lime);
+    border-color: var(--color-lime);
+    color: #070806;
+  }
+
+  .scene-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid rgb(199 255 61 / 0.35);
+    background: rgb(3 3 4 / 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink);
+    white-space: nowrap;
+  }
+
+  .scene-label span {
+    color: var(--color-lime);
+  }
+
+  .spotlight {
+    background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgb(199 255 61 / 0.09), transparent 45%);
+  }
+
+  .marquee {
+    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+
+  .marquee-track {
+    animation: marquee 42s linear infinite;
+  }
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes arrow-loop {
+  0% {
+    transform: translateX(0);
+  }
+  45% {
+    transform: translateX(140%);
+  }
+  46% {
+    transform: translateX(-140%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(199 255 61 / 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgb(199 255 61 / 0);
+  }
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-lime);
+  animation: pulse-dot 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
